@@ -13,7 +13,10 @@ REFINEMENT_MODEL_NAME = "anthropic/claude-sonnet-4.5"
 JOURNALS_CSV = "JournalSubset.csv"
 
 # Demo API key - set this to your key, or leave empty to disable demo mode
-DEMO_API_KEY = ""  # Set your API key here for demo mode
+try:
+    DEMO_API_KEY = st.secrets["DEMO_API_KEY"]
+except:
+    DEMO_API_KEY = ""
 MAX_DEMO_USES = 3  # Number of free tries with demo key
 
 # --- Page Configuration ---
