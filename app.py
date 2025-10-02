@@ -13,12 +13,8 @@ REFINEMENT_MODEL_NAME = "anthropic/claude-sonnet-4.5"
 JOURNALS_CSV = "JournalSubset.csv"
 
 # Demo API key - set this to your key, or leave empty to disable demo mode
-try:
-    DEMO_API_KEY = st.secrets["DEMO_API_KEY"]
-except:
-    DEMO_API_KEY = ""
-
-MAX_DEMO_USES = 2  # Number of free tries with demo key
+DEMO_API_KEY = ""  # Set your API key here for demo mode
+MAX_DEMO_USES = 3  # Number of free tries with demo key
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -321,28 +317,15 @@ with st.sidebar:
         remaining_demos = MAX_DEMO_USES - st.session_state.demo_uses
         
         if remaining_demos > 0:
+            # Show trials remaining, automatically use demo
             st.info(f"🎁 **Free Trials Available**: {remaining_demos} of {MAX_DEMO_USES} remaining")
-            st.markdown("Try the tool for free, then add your own API key for unlimited use.")
-            
-            use_demo = st.checkbox("Use free trial", value=True)
-            
-            if use_demo:
-                user_api_key = ""
-                st.markdown("---")
-                st.markdown("**Or enter your own key:**")
-            else:
-                use_demo = False
+            user_api_key = ""
         else:
+            # Trials exhausted, ask for their key
             st.warning(f"⚠️ You've used all {MAX_DEMO_USES} free trials.")
             st.markdown("Please enter your own OpenRouter API key to continue.")
-            use_demo = False
-    else:
-        use_demo = False
-    
-    if not use_demo or not demo_mode_enabled or remaining_demos <= 0:
-        user_api_key = st.text_input("OpenRouter API Key", type="password", help="Your API key is never stored")
-        
-        if not demo_mode_enabled or remaining_demos <= 0:
+            user_api_key = st.text_input("OpenRouter API Key", type="password", help="Your API key is never stored")
+            
             st.markdown("---")
             st.markdown("### 🔑 How to Get Your API Key")
             st.markdown("""
@@ -363,7 +346,28 @@ with st.sidebar:
             </div>
             """, unsafe_allow_html=True)
     else:
-        user_api_key = ""
+        # No demo mode, always ask for key
+        user_api_key = st.text_input("OpenRouter API Key", type="password", help="Your API key is never stored")
+        
+        st.markdown("---")
+        st.markdown("### 🔑 How to Get Your API Key")
+        st.markdown("""
+        <div style="text-align: justify;">
+        <b>Step 1: Create Account</b><br>
+        Visit <a href="https://openrouter.ai/" target="_blank">OpenRouter.ai</a> and sign up for a free account. You can use your Google account for quick registration.
+        <br><br>
+        <b>Step 2: Add Credits</b><br>
+        Go to your account dashboard and add credits. A minimum of $5 is recommended to start. Credits don't expire.
+        <br><br>
+        <b>Step 3: Generate API Key</b><br>
+        Navigate to the "Keys" section in your dashboard and click "Create Key". Copy the key that starts with "sk-or-v1-".
+        <br><br>
+        <b>Step 4: Paste Here</b><br>
+        Enter your API key in the field above. Your key is never stored and only used for real-time processing.
+        <br><br>
+        <b>💰 Estimated Cost:</b> $0.10-$0.30 per paper analysis, depending on paper length and database size.
+        </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     st.markdown("### 📊 Models Used")
@@ -376,6 +380,11 @@ with st.sidebar:
     Sophisticated model for comparative analysis of top-matching journals, providing nuanced ranking.
     </div>
     """.format(MODEL_NAME, REFINEMENT_MODEL_NAME), unsafe_allow_html=True)
+    
+    # Show if user is using their own key
+    if demo_mode_enabled and user_api_key:
+        st.markdown("---")
+        st.success("✅ Using your personal API key")
     
     st.markdown("---")
     st.markdown("### ℹ️ About")
@@ -396,15 +405,22 @@ st.markdown("")  # Add spacing
 uploaded_file = st.file_uploader("Upload your research paper (PDF)", type=['pdf'])
 
 # Determine which API key to use
-if demo_mode_enabled and use_demo and remaining_demos > 0:
-    active_api_key = DEMO_API_KEY
-    using_demo = True
+if demo_mode_enabled:
+    remaining_demos = MAX_DEMO_USES - st.session_state.demo_uses
+    if remaining_demos > 0 and not user_api_key:
+        # Use demo key
+        active_api_key = DEMO_API_KEY
+        using_demo = True
+    else:
+        # Use user's key
+        active_api_key = user_api_key
+        using_demo = False
 else:
     active_api_key = user_api_key
     using_demo = False
 
 # Check if we can run
-can_run = active_api_key and uploaded_file
+can_run = bool(active_api_key and uploaded_file)
 
 if st.button("🔍 Find Matching Journals", type="primary", disabled=not can_run):
     
