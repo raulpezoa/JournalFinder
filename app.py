@@ -17,7 +17,7 @@ try:
     DEMO_API_KEY = st.secrets["DEMO_API_KEY"]
 except:
     DEMO_API_KEY = ""
-MAX_DEMO_USES = 3  # Number of free tries with demo key
+MAX_DEMO_USES = 1  # Number of free tries with demo key
 
 # --- Page Configuration ---
 st.set_page_config(
