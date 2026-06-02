@@ -1,0 +1,9 @@
+# App theme. Secrets (including DEMO_API_KEY) go in .streamlit/secrets.toml,
+# which is gitignored — never commit that file.
+[theme]
+base = "light"
+primaryColor = "#2563eb"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f5f6f8"
+textColor = "#1f2937"
+font = "sans serif"

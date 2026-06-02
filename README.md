@@ -1,122 +1,64 @@
-# Journal Matcher
+# JournalFinder
 
-AI-powered tool to find the best academic journals for your research paper.
+Upload a research paper (PDF) and get a ranked list of journals that fit its scope.
+It reads the paper, scores every journal in `JournalSubset.csv` for fit, then
+re-ranks the best matches with a stronger model.
 
-## Features
+## How it works
 
-- 📝 Automatic paper summary generation
-- 🔍 Intelligent journal matching using dual-model AI analysis
-- 📊 Comparative refinement of top journal matches
-- 🚀 Easy-to-use web interface
+1. A summary of the paper is generated from the PDF.
+2. Each journal in the database is scored 0–100 for fit against that summary.
+3. The top matches are re-ranked by comparing them against each other.
+4. You get a sorted table, downloadable as CSV.
 
-## How It Works
+Everything runs through [OpenRouter](https://openrouter.ai/), so one API key covers all three steps.
 
-1. **Summary Generation**: AI reads your PDF and creates a comprehensive summary
-2. **Initial Scoring**: Fast model evaluates all journals in the database
-3. **Smart Refinement**: Sophisticated model performs comparative analysis on top matches
-4. **Results**: Ranked list of suitable journals with fit scores
+## Models
 
-## Models Used
+| Step | Model | Why |
+|------|-------|-----|
+| Summary | `google/gemini-3.5-flash` | One call per paper; reads the full PDF. |
+| Scoring | `google/gemini-3.1-flash-lite` | Runs ~1,000+ times per paper, so it has to be cheap and fast. |
+| Re-ranking | `anthropic/claude-opus-4.8` | One call on the shortlist — the final ranking, so it gets the best model. |
 
-- **Initial Scoring**: Google Gemini 2.0 Flash (fast and cost-effective)
-- **Refinement**: Claude Sonnet 4.5 (sophisticated comparative analysis)
+Change any of these at the top of `matcher.py`. Rough cost is about **$0.40 per paper**,
+almost all of it from the scoring step. Swapping the scoring model for an even
+cheaper one (e.g. `google/gemini-2.5-flash-lite`) is a one-line change.
 
-## Deployment Instructions
-
-### Prerequisites
-
-- GitHub account
-- Streamlit Cloud account (free - sign up at https://share.streamlit.io/)
-- OpenRouter API key (users provide their own)
-
-### Setup Steps
-
-1. **Create Private GitHub Repository**
-   - Go to GitHub and create a new private repository
-   - Name it something like `journal-matcher`
-
-2. **Upload Files**
-   - `app.py` (the Streamlit application)
-   - `requirements.txt` (Python dependencies)
-   - `JournalSubset.csv` (your journals database)
-   - `.gitignore` (excluded files)
-   - `README.md` (this file)
-
-3. **Deploy to Streamlit Cloud**
-   - Go to https://share.streamlit.io/
-   - Click "New app"
-   - Select your private repository
-   - Main file path: `app.py`
-   - Click "Deploy"
-   - Wait 2-3 minutes for deployment
-
-4. **Share with Colleagues**
-   - Copy the deployed app URL (e.g., `https://your-app.streamlit.app`)
-   - Share with colleagues
-   - They'll need their own OpenRouter API key to use the app
-
-### Local Testing (Optional)
-
-Before deploying, you can test locally:
+## Run it locally
 
 ```bash
-# Install dependencies
 pip install -r requirements.txt
-
-# Run the app
-streamlit run app.py
+streamlit run streamlit_app.py
 ```
 
-The app will open in your browser at `http://localhost:8501`
+Open http://localhost:8501, paste your OpenRouter key in the sidebar, upload a PDF,
+and click **Find journals**.
 
-## User Instructions
+## Deploy on Streamlit Cloud
 
-### For Your Colleagues
+1. Push this repo to GitHub.
+2. At [share.streamlit.io](https://share.streamlit.io/), create a new app from the repo.
+3. Set the main file to `streamlit_app.py`.
+4. Optional: to offer free trial runs on your own key, add a secret named `DEMO_API_KEY`
+   in the app settings. Each trial run is billed to that key.
 
-1. Visit the app URL
-2. Enter your OpenRouter API key in the sidebar
-3. Upload your research paper (PDF)
-4. Click "Find Matching Journals"
-5. Wait for analysis (usually 2-5 minutes depending on database size)
-6. Review results and download recommendations
+## The journal database
 
-### Getting an OpenRouter API Key
+`JournalSubset.csv` holds the journals to match against, with columns
+`Name, Publisher, JIF, Quartile, OA, Scope, Subjects`. Add or remove rows to change
+what gets searched — only `Name`, `Scope`, and `Subjects` affect scoring; the rest
+are shown in the results.
 
-1. Go to https://openrouter.ai/
-2. Sign up for an account
-3. Add credits to your account
-4. Generate an API key from the dashboard
+## Tests
 
-**Estimated Cost**: Approximately $0.10-$0.30 per paper analysis (depends on paper length and number of journals)
+```bash
+python test_matcher.py    # or: pytest
+```
 
-## Privacy & Security
+These cover the score parsing and shortlist logic and don't make any network calls.
 
-- API keys are never stored or logged
-- Uploaded PDFs are processed in memory only
-- No data is saved between sessions
-- All processing happens in real-time
+## Notes
 
-## Troubleshooting
-
-### "No adequate journals found"
-- This means no journals scored 75 or above
-- The paper may be too specialized or outside the database scope
-- Try a different paper or expand the journal database
-
-### API Errors
-- Check that your API key is valid
-- Ensure you have credits in your OpenRouter account
-- Verify internet connection
-
-### Slow Performance
-- Large PDFs take longer to process
-- Database with many journals increases processing time
-- This is normal - be patient!
-
-## Support
-
-For issues or questions, contact the repository owner.
-
-## License
-
-Private use only - not for public distribution.
+- Your API key and uploaded PDF aren't stored; they're used for the run and then dropped.
+- The free-trial counter is per browser session, so it's a convenience, not a hard limit.
